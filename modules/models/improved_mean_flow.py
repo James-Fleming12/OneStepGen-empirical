@@ -70,7 +70,8 @@ class ImprovedMeanFlow(MeanFlow):
         loss = (weight * sq_err).mean()
 
         self._update_ema()
-        return loss, {"loss": loss.item()}
+        # Median is robust to the JVP outliers that dominate the mean; see MeanFlow.
+        return loss, {"loss": loss.item(), "mse_med": sq_err.median().item()}
 
     @torch.no_grad()
     def sample(self, n, steps=1):
@@ -86,3 +87,15 @@ class ImprovedMeanFlow(MeanFlow):
             u = self.ema_net(x, t, r)
             x = x + (bounds[i + 1] - bounds[i]) * u
         return x
+
+    def state_dict(self):
+        return {"net": self.net.state_dict(), "ema_net": self.ema_net.state_dict()}
+
+    def load_state_dict(self, sd):
+        if isinstance(sd, dict) and "net" in sd and "ema_net" in sd:
+            self.net.load_state_dict(sd["net"])
+            self.ema_net.load_state_dict(sd["ema_net"])
+        else:
+            # Legacy checkpoints saved only the live net; keep the EMA stale
+            # (matches old behaviour) rather than silently producing garbage.
+            self.net.load_state_dict(sd)

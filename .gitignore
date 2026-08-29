@@ -1,2 +1,5 @@
 *.pth
 papers
+weights
+logs
+__pycache__

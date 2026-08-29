@@ -113,7 +113,13 @@ class DriftModel:
         return 1
 
     def state_dict(self):
-        return self.net.state_dict()
+        return {"net": self.net.state_dict(), "ema_net": self.ema_net.state_dict()}
 
     def load_state_dict(self, sd):
-        self.net.load_state_dict(sd)
+        if isinstance(sd, dict) and "net" in sd and "ema_net" in sd:
+            self.net.load_state_dict(sd["net"])
+            self.ema_net.load_state_dict(sd["ema_net"])
+        else:
+            # Legacy checkpoints saved only the live net; keep the EMA stale
+            # (matches old behaviour) rather than silently producing garbage.
+            self.net.load_state_dict(sd)

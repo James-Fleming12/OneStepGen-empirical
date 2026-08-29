@@ -55,7 +55,10 @@ class MeanFlow:
 
         weight = 1.0 / (sq_err.detach() + 1e-3).pow(self.adaptive_p)
         loss = (weight * sq_err).mean()
-        return loss, {"loss": loss.item()}
+        # The adaptive weighting keeps `loss` near ~1 regardless of progress, and
+        # the raw mean MSE is dominated by a few JVP outliers. The median is a
+        # robust, monotone convergence signal.
+        return loss, {"loss": loss.item(), "mse_med": sq_err.median().item()}
 
     @torch.no_grad()
     def sample(self, n, steps=1):
