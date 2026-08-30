@@ -1,3 +1,4 @@
+from .diffusion import DiffusionModel
 from .drifting_model import DriftModel
 from .flow_matching import FlowMatching
 from .improved_mean_flow import ImprovedMeanFlow
@@ -5,6 +6,7 @@ from .mean_flow import MeanFlow
 
 MODEL_REGISTRY = {
     "flow_matching": FlowMatching,
+    "diffusion": DiffusionModel,
     "mean_flow": MeanFlow,
     "improved_mean_flow": ImprovedMeanFlow,
     "drifting_model": DriftModel,

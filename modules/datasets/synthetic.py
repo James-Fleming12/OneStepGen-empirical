@@ -61,6 +61,19 @@ def sample_swissroll(n: int, noise: float = 0.05) -> np.ndarray:
     pts += np.random.normal(scale=noise, size=pts.shape)
     return pts.astype(np.float32)
 
+def sample_gmm(n: int, dim: int = 2, n_modes: int = 8, center_scale: float = 3.0,
+               std_low: float = 0.05, std_high: float = 0.4) -> np.ndarray:
+    # High-dimensional GMM: modes on a sphere of radius `center_scale`, each with a
+    # different std. Varying scales in high dim stress distance-based drift methods.
+    dirs = np.random.normal(size=(n_modes, dim))
+    dirs /= np.linalg.norm(dirs, axis=1, keepdims=True)
+    centers = (center_scale * dirs).astype(np.float32)
+    stds = np.linspace(std_low, std_high, n_modes)
+    idx = np.random.choice(n_modes, size=n, p=np.ones(n_modes) / n_modes)
+    pts = centers[idx]
+    pts += np.random.normal(scale=stds[idx, None], size=(n, dim)).astype(np.float32)
+    return pts.astype(np.float32)
+
 SYNTHETIC_REGISTRY = {
     "moons": sample_moons,
     "checkerboard": sample_checkerboard,
@@ -68,7 +81,12 @@ SYNTHETIC_REGISTRY = {
     "25gaussians": sample_25gaussians,
     "unequal_gmm": sample_unequal_gmm,
     "swissroll": sample_swissroll,
+    "gmm_16d": lambda n: sample_gmm(n, dim=16, n_modes=8, center_scale=3.0),
+    "gmm_64d": lambda n: sample_gmm(n, dim=64, n_modes=8, center_scale=3.0),
 }
+
+# Dimensionality override for datasets whose samples are not 2D.
+SYNTHETIC_DIMS = {"gmm_16d": 16, "gmm_64d": 64}
 
 def sample_synthetic(name: str, n: int, seed: int = None) -> torch.Tensor:
     if seed is not None:
@@ -85,7 +103,7 @@ class SyntheticDataset(Dataset):
             raise ValueError(f"Unknown synthetic dataset '{name}'. Choices: {sorted(SYNTHETIC_REGISTRY)}")
         self.name = name
         self.data = sample_synthetic(name, n_samples, seed=seed)
-        self.dim = 2
+        self.dim = SYNTHETIC_DIMS.get(name, 2)
 
     def __len__(self):
         return len(self.data)

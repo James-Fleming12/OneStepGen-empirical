@@ -21,7 +21,7 @@ class RealImageDataset(Dataset):
 
         if name == "mnist":
             ds = torchvision.datasets.MNIST(root=root, train=train, download=True, transform=transform)
-        elif name == "fashion":
+        elif name in ("fashion", "fashionmnist"):
             ds = torchvision.datasets.FashionMNIST(root=root, train=train, download=True, transform=transform)
         else:
             raise NotImplementedError(f"Only MNIST and FashionMNIST are implemented, not {name}")
